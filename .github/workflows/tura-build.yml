@@ -1,0 +1,47 @@
+name: Tura Code Oluşturucu
+
+on:
+  workflow_dispatch: # Bu satır, butona basınca çalışmasını sağlar
+
+jobs:
+  build-windows:
+    runs-on: windows-latest # GitHub'ın Windows sunucusunu kullan
+    
+    steps:
+    - name: Kodları Çek (Checkout)
+      uses: actions/checkout@v4
+
+    - name: Node.js Kur (v20 LTS - Stabil Sürüm)
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Yarn Kur
+      run: npm install -g yarn
+
+    - name: Python Kur (Derleme için gerekli)
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Bağımlılıkları Yükle (İnternetten indirir)
+      run: yarn --frozen-lockfile
+      env:
+        # Electron derlemesi için gerekli mimari ayarı
+        npm_config_arch: x64 
+
+    - name: Tura Code'u Derle (Minify & Build)
+      # Bu işlem en uzun süren kısımdır (15-30 dk)
+      run: yarn run gulp vscode-win32-x64-min
+      env:
+        NODE_OPTIONS: "--max_old_space_size=4096"
+
+    - name: Sonucu Ziple ve Paketle
+      run: |
+        Compress-Archive -Path ../VSCode-win32-x64/* -DestinationPath TuraCode-Windows.zip
+
+    - name: İndirilebilir Hale Getir (Artifact Upload)
+      uses: actions/upload-artifact@v4
+      with:
+        name: TuraCode-Setup
+        path: TuraCode-Windows.zip
