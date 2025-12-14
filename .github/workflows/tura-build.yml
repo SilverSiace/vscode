@@ -1,46 +1,44 @@
 name: Tura Code Oluşturucu
 
 on:
-  workflow_dispatch: # Bu satır, butona basınca çalışmasını sağlar
+  workflow_dispatch:
 
 jobs:
   build-windows:
-    runs-on: windows-latest # GitHub'ın Windows sunucusunu kullan
+    runs-on: windows-latest
     
     steps:
     - name: Kodları Çek (Checkout)
       uses: actions/checkout@v4
 
-    - name: Node.js Kur (v20 LTS - Stabil Sürüm)
+    - name: Node.js Kur (v18 - Stabil Sürüm)
       uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version: 18 # BURAYI 20'den 18'e ÇEKTİK, SORUN BU.
 
     - name: Yarn Kur
       run: npm install -g yarn
 
-    - name: Python Kur (Derleme için gerekli)
+    - name: Python Kur
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
-    - name: Bağımlılıkları Yükle (İnternetten indirir)
-      run: yarn --frozen-lockfile
-      env:
-        # Electron derlemesi için gerekli mimari ayarı
-        npm_config_arch: x64 
+    - name: Bağımlılıkları Yükle
+      # preinstall hatasını yoksaymak için ignore-scripts ekleyebiliriz ama
+      # Node 18 ile buna gerek kalmayacaktır.
+      run: yarn --frozen-lockfile --network-timeout 100000
 
     - name: Tura Code'u Derle (Minify & Build)
-      # Bu işlem en uzun süren kısımdır (15-30 dk)
       run: yarn run gulp vscode-win32-x64-min
       env:
-        NODE_OPTIONS: "--max_old_space_size=4096"
+        NODE_OPTIONS: "--max_old_space_size=8192"
 
-    - name: Sonucu Ziple ve Paketle
+    - name: Sonucu Ziple
       run: |
         Compress-Archive -Path ../VSCode-win32-x64/* -DestinationPath TuraCode-Windows.zip
 
-    - name: İndirilebilir Hale Getir (Artifact Upload)
+    - name: İndirilebilir Hale Getir
       uses: actions/upload-artifact@v4
       with:
         name: TuraCode-Setup
